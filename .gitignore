@@ -1,8 +1,5 @@
 # ferramentas baixadas (re-extraíveis do PyPI a qualquer momento)
 /tools/
-# artefatos de render (regeneráveis pelos scripts em work/)
+# artefatos intermediários de render (regeneráveis pelos scripts em work/)
 work/renders/
 work/tmp/
-# vídeos finais grandes — entregar fora do git
-video_final_*.mp4
-A_falha_humana_video_*.mp4
