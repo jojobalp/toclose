@@ -35,66 +35,89 @@ def run(cmd):
 
 def doc_card(out, header, lines, stamp, foot, W, H, port):
     M = 90 if not port else 80
-    hdr_size = 52 if not port else 50
-    maxc = 999 if not port else 26
+    hdr_size = 44 if not port else 44
+    avail_w = (W - 2 * M - 40)
+    hdr_avail_w = (W - 660 - M) if not port else avail_w
+    hdr_maxc = max(18, int(hdr_avail_w / (hdr_size * 0.62)))
     cmd = ["convert", "-size", f"{W}x{H}", "xc:#e7e2d3"]
     cmd += ["-attenuate", "0.16", "+noise", "Gaussian"]
     cmd += ["-fill", "rgba(60,50,30,0.10)", "-draw", f"rectangle 0,0 {W},80"]
     cmd += ["-stroke", "rgba(40,35,25,0.55)", "-strokewidth", "5", "-fill", "none",
             "-draw", f"rectangle {M-30},60 {W-M+30},{H-60}"]
-    # header (pode quebrar no portrait)
-    y = 150
-    for hl in (wrap(header, maxc) if port else [header]):
-        cmd += ["-font", MONOB, "-pointsize", str(hdr_size), "-fill", "#2a2620",
+    if port:
+        # No portrait, coloca o carimbo no topo direito e inicia o cabeçalho abaixo dele
+        cmd += ["-fill", "none", "-stroke", "#b03a2e", "-strokewidth", "7",
+                "-draw", f"rectangle {W-610},95 {W-80},205"]
+        cmd += ["-font", SERIFB, "-pointsize", "54", "-fill", "#b03a2e",
+                "-draw", f"text {W-580},172 '{esc(stamp)}'"]
+        y = 280
+    else:
+        cmd += ["-fill", "none", "-stroke", "#b03a2e", "-strokewidth", "7",
+                "-draw", f"rectangle {W-640},90 {W-100},210"]
+        cmd += ["-font", SERIFB, "-pointsize", "58", "-fill", "#b03a2e",
+                "-draw", f"text {W-608},175 '{esc(stamp)}'"]
+        y = 155
+    for hl in wrap(header, hdr_maxc):
+        cmd += ["-stroke", "none", "-font", MONOB, "-pointsize", str(hdr_size), "-fill", "#2a2620",
                 "-draw", f"text {M},{y} '{esc(hl)}'"]
-        y += int(hdr_size * 1.5)
+        y += int(hdr_size * 1.45)
+    line_y = max(y - 15, 230) if not port else y - 15
     cmd += ["-stroke", "rgba(40,35,25,0.55)", "-strokewidth", "3",
-            "-draw", f"line {M},{y-20} {W-M},{y-20}"]
-    y += 70
+            "-draw", f"line {M},{line_y} {W-M},{line_y}"]
+    y = line_y + 85
     for size, text, colr in lines:
-        sz = size if not port else min(size, 62)
-        for wl in (wrap(text, maxc) if port else [text]):
-            cmd += ["-font", MONO, "-pointsize", str(sz), "-fill", colr,
+        sz = size if not port else min(size, 58)
+        maxc = max(16, int(avail_w / (sz * 0.62)))
+        for wl in wrap(text, maxc):
+            cmd += ["-stroke", "none", "-font", MONO, "-pointsize", str(sz), "-fill", colr,
                     "-draw", f"text {M},{y} '{esc(wl)}'"]
-            y += int(sz * 1.55)
-        y += 30
-    cmd += ["-font", SANS, "-pointsize", "34" if not port else "30", "-fill", "#5a5347"]
-    fy = H - 100
-    for wl in (wrap(foot, 46) if port else [foot]):
+            y += int(sz * 1.48)
+        y += 28
+    foot_sz = 32 if not port else 28
+    foot_maxc = max(24, int(avail_w / (foot_sz * 0.56)))
+    foot_lines = wrap(foot, foot_maxc)
+    cmd += ["-font", SANS, "-pointsize", str(foot_sz), "-fill", "#5a5347"]
+    fy = H - 90 - (len(foot_lines) - 1) * 40
+    for wl in foot_lines:
         cmd += ["-draw", f"text {M},{fy} '{esc(wl)}'"]
-        fy += 44
-    cmd += ["-fill", "none", "-stroke", "#b03a2e", "-strokewidth", "7",
-            "-draw", f"rectangle {W-640},90 {W-100},210"]
-    cmd += ["-font", SERIFB, "-pointsize", "58", "-fill", "#b03a2e",
-            "-draw", f"text {W-608},180 '{esc(stamp)}'"]
+        fy += 40
     cmd += ["-quality", "92", out]
     run(cmd)
 
 def brief_card(out, kicker, lines, foot, W, H, port, accent="#e8a33d"):
     M = 130 if not port else 80
-    maxc = 999 if not port else 24
+    avail_w = W - 2 * M - 40
     cmd = ["convert", "-size", f"{W}x{H}", "xc:#0b0f14"]
     cmd += ["-attenuate", "0.05", "+noise", "Gaussian"]
     cmd += ["-fill", accent, "-draw", f"rectangle 0,0 22,{H}"]
-    y = 200
-    for kl in (wrap(kicker, 30) if port else [kicker]):
+    y = 180
+    kicker_maxc = max(20, int(avail_w / (48 * 0.62)))
+    for kl in wrap(kicker, kicker_maxc):
         cmd += ["-font", MONOB, "-pointsize", "48", "-fill", accent,
                 "-draw", f"text {M},{y} '{esc(kl)}'"]
-        y += 70
-    y += 90
+        y += 68
+    y += 75
     for size, text, colr in lines:
-        sz = size if not port else min(size, 110)
+        if port:
+            sz = size if size >= 110 else min(size, 74)
+        else:
+            sz = size if size >= 110 else min(size, 82)
         font = SANSB if size >= 80 else SANS
-        for wl in (wrap(text, maxc) if port else [text]):
+        char_factor = 0.62 if size >= 80 else 0.55
+        maxc = max(14, int(avail_w / (sz * char_factor)))
+        for wl in wrap(text, maxc):
             cmd += ["-font", font, "-pointsize", str(sz), "-fill", colr,
                     "-draw", f"text {M},{y} '{esc(wl)}'"]
-            y += int(sz * 1.45)
+            y += int(sz * 1.38)
         y += 26
-    cmd += ["-font", MONO, "-pointsize", "36" if not port else "30", "-fill", "#7d8894"]
-    fy = H - 100
-    for wl in (wrap(foot, 40) if port else [foot]):
+    foot_sz = 34 if not port else 28
+    foot_maxc = max(24, int(avail_w / (foot_sz * 0.61)))
+    foot_lines = wrap(foot, foot_maxc)
+    cmd += ["-font", MONO, "-pointsize", str(foot_sz), "-fill", "#7d8894"]
+    fy = H - 90 - (len(foot_lines) - 1) * 42
+    for wl in foot_lines:
         cmd += ["-draw", f"text {M},{fy} '{esc(wl)}'"]
-        fy += 44
+        fy += 42
     cmd += ["-quality", "92", out]
     run(cmd)
 

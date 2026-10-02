@@ -104,7 +104,7 @@ def render(mode):
         out = f"{outdir}/seg{i+1:02d}.mp4"
         cmd = [FF, "-y", "-loglevel", "error", "-i", img] + extra + [
                "-filter_complex", fc, "-map", "[outv]", "-r", str(FPS),
-               "-c:v", "libx264", "-preset", "ultrafast", "-crf", "15",
+               "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-tune", "stillimage",
                "-pix_fmt", "yuv420p", out]
         print(f"[{mode}] seg {i+1:02d} {sc} {dur:.2f}s ...", flush=True)
         r = subprocess.run(cmd, capture_output=True)
